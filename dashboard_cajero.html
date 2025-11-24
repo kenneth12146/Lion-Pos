@@ -1,0 +1,546 @@
+!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Cajero PRO - Sistema POS Completo</title>
+  <link rel="shortcut icon" href="img/logo.png" />
+
+  <!-- EmailJS para envío de emails -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  
+  <!-- QuaggaJS para escaneo de códigos de barras -->
+  <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.7.4/dist/quagga.min.js"></script>
+  
+  <link rel="stylesheet" href="./css/dashboard_cajero.css">
+
+ 
+</head>
+<body>
+  <!-- Audio para feedback -->
+  <audio id="beepSound" preload="auto">
+    <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGWi77eefTRAMUKfj8LZjHAY4ktjywH8mBS5/yPDcjj4JFGC167ufUhENRqXh8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8bllHgU2kNXxxnwlBip7x/DajDwJFV6z6+mjUhALRaLf8blA==" type="audio/wav">
+  </audio>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="user-info">
+        
+        <div>
+          <div style="font-weight: 600;" id="nombreUsuario">Cajero</div>
+          <div style="font-size: 12px; opacity: 0.8;">Profesional</div>
+        </div>
+      </div>
+    </div>
+    
+    <ul class="sidebar-menu">
+      <li><a href="#" class="active" data-section="venta">🛒 Nueva Venta</a></li>
+      <li><a href="#" data-section="pendientes">💾 Ventas Pendientes</a></li>
+      <li><a href="#" data-section="devoluciones">🔄 Devoluciones</a></li>
+      <li><a href="#" data-section="historial">📋 Historial</a></li>
+      <li><a href="#" data-section="miturno">📊 Mi Turno</a></li>
+      <li><a href="#" data-section="caja">💰 Control de Caja</a></li>
+      <li><a href="#" data-section="ajustes">⚙️ Ajustes</a></li>
+      <li><a href="#" id="btnCerrarSesion">🚪 Cerrar Sesión</a></li>
+    </ul>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Topbar -->
+    <div class="topbar">
+      <div>
+        <span>Punto de Venta</span> / <span id="currentSection">Nueva Venta</span>
+      </div>
+      <div>
+        <span id="estadoCaja" class="badge badge-danger">Caja cerrada</span>
+        <strong id="nombreNegocio" style="margin-left: 15px;">Mi Negocio</strong>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div id="successMsg" class="message success"></div>
+    <div id="errorMsg" class="message error"></div>
+
+    <!-- NUEVA VENTA -->
+    <div class="section-content active" id="section-venta">
+      <!-- Mini estadísticas -->
+      <div class="stats-mini">
+        <div class="stat-mini-card">
+          <div class="value" id="miniVentasHoy">0</div>
+          <div class="label">Ventas Hoy</div>
+        </div>
+        <div class="stat-mini-card">
+          <div class="value" id="miniTotalHoy">$0</div>
+          <div class="label">Total Hoy</div>
+        </div>
+        <div class="stat-mini-card">
+          <div class="value" id="miniPendientes">0</div>
+          <div class="label">Pendientes</div>
+        </div>
+        <div class="stat-mini-card">
+          <div class="value" id="miniProductos">0</div>
+          <div class="label">Productos</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Productos -->
+        <div class="card">
+          <h3>📦 Productos Disponibles</h3>
+          
+          <!-- Búsqueda -->
+          <div class="search-bar">
+            <input 
+              type="text" 
+              id="buscarCodigo" 
+              placeholder="🔍 Código (Enter)" 
+              style="flex: 1;"
+            >
+            <button class="btn btn-primary" onclick="iniciarEscaner()">
+              📸
+            </button>
+            <input 
+              type="text" 
+              id="buscarNombre" 
+              placeholder="🔍 Nombre..." 
+              style="flex: 2;"
+            >
+          </div>
+          
+          <!-- Filtro categorías -->
+          <div class="categorias-filter" id="categoriasFilter">
+            <button class="cat-btn active" data-categoria="">Todos</button>
+          </div>
+          
+          <!-- Grid de productos -->
+          <div class="productos-grid" id="productosGrid">
+            <div class="empty-state">
+              <p>Cargando productos...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Carrito -->
+        <div class="card">
+          <h3>🛒 Carrito de Venta</h3>
+          
+          <!-- Info cliente -->
+          <div class="carrito-header">
+            <div class="cliente-info" id="clienteInfo">
+              👤 Mostrador
+            </div>
+            <button class="btn btn-light" style="padding: 5px 10px; font-size: 12px;" onclick="editarCliente()">
+              ✏️
+            </button>
+          </div>
+          
+          <div id="carritoItems" style="min-height: 200px; max-height: 300px; overflow-y: auto;">
+            <div class="empty-state">
+              <div style="font-size: 48px; margin-bottom: 10px;">🛍️</div>
+              <p>Carrito vacío</p>
+            </div>
+          </div>
+
+          <!-- Descuento aplicado -->
+          <div id="descuentoInfo" style="display: none;" class="descuento-aplicado">
+            <div>
+              <strong>🏷️ Descuento:</strong> <span id="descuentoTexto">0%</span>
+            </div>
+            <button class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;" onclick="quitarDescuento()">×</button>
+          </div>
+
+          <div class="total-venta" id="totalVenta">$0</div>
+          <div class="subtotal-info" id="subtotalInfo"></div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+            <button class="btn btn-light" onclick="editarCliente()">
+              👤 Cliente
+            </button>
+            <button id="btnAplicarDescuento" class="btn btn-warning">
+              🏷️ Descuento
+            </button>
+            <button class="btn btn-light" onclick="guardarVentaPendiente()">
+              💾 Guardar
+            </button>
+            <button class="btn btn-light" onclick="agregarNota()">
+              📝 Nota
+            </button>
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <button id="btnCancelarVenta" class="btn btn-danger" style="font-size: 20px; padding: 12px 15px;">
+              ❌
+            </button>
+            <button id="btnConfirmarVenta" class="btn btn-success" style="flex: 1; font-size: 16px; padding: 12px;">
+              💳 Pagar (F3)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VENTAS PENDIENTES -->
+    <div class="section-content" id="section-pendientes">
+      <div class="card">
+        <h3>💾 Ventas Pendientes</h3>
+        <p style="color: #7f8c8d; margin-bottom: 20px;">Ventas guardadas temporalmente para continuar después</p>
+        
+        <div class="ventas-pendientes" id="ventasPendientesLista">
+          <div class="empty-state">
+            <p>No hay ventas pendientes</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEVOLUCIONES -->
+    <div class="section-content" id="section-devoluciones">
+      <div class="card">
+        <h3>🔄 Registrar Devolución</h3>
+        
+        <div class="form-group">
+          <label>ID de la Venta:</label>
+          <input type="text" id="devolucionVentaId" placeholder="Ej: V1699564821234">
+        </div>
+        
+        <button class="btn btn-primary" onclick="buscarVentaParaDevolucion()">
+          🔍 Buscar Venta
+        </button>
+        
+        <div id="devolucionDetalles" style="display: none; margin-top: 20px;">
+          <h4 style="margin-bottom: 15px;">Productos de la Venta:</h4>
+          <div id="productosDevolucion"></div>
+          
+          <div class="form-group" style="margin-top: 20px;">
+            <label>Motivo de la Devolución:</label>
+            <textarea id="devolucionMotivo" placeholder="Describe el motivo..."></textarea>
+          </div>
+          
+          <button class="btn btn-success" onclick="procesarDevolucion()">
+            ✅ Procesar Devolución
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORIAL -->
+    <div class="section-content" id="section-historial">
+      <div class="card">
+        <h3>📋 Historial de Ventas</h3>
+        
+        <table id="tablaVentas">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Fecha</th>
+              <th>Total</th>
+              <th>Cliente</th>
+              <th>Usuario</th>
+              <th>Método</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="6" style="text-align:center; color:#999; padding:20px;">
+                No hay ventas registradas
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MI TURNO -->
+    <div class="section-content" id="section-miturno">
+      <div class="card">
+        <h3>📊 Mi Turno - Resumen Personal</h3>
+        
+        <div class="stats-mini" style="margin-bottom: 30px;">
+          <div class="stat-mini-card">
+            <div class="value" id="miTurnoVentas">0</div>
+            <div class="label">Mis Ventas</div>
+          </div>
+          <div class="stat-mini-card">
+            <div class="value" id="miTurnoTotal">$0</div>
+            <div class="label">Total Vendido</div>
+          </div>
+          <div class="stat-mini-card">
+            <div class="value" id="miTurnoProductos">0</div>
+            <div class="label">Productos Vendidos</div>
+          </div>
+          <div class="stat-mini-card">
+            <div class="value" id="miTurnoPromedio">$0</div>
+            <div class="label">Ticket Promedio</div>
+          </div>
+        </div>
+
+        <h4 style="margin: 20px 0 15px 0;">🏆 Productos Más Vendidos por Mí</h4>
+        <table id="tablaTopProductosMios">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Producto</th>
+              <th>Cantidad</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CONTROL DE CAJA -->
+    <div class="section-content" id="section-caja">
+      <div class="card">
+        <h3>💰 Control de Caja</h3>
+        
+        <div style="padding: 20px; background: linear-gradient(135deg, #16a085 0%, #138d75 100%); border-radius: 8px; color: white; margin-bottom: 20px;">
+          <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="font-size: 48px;">💰</div>
+            <div style="flex: 1;">
+              <div style="font-size: 14px; opacity: 0.9;">Estado de Caja</div>
+              <div style="font-size: 24px; font-weight: bold;" id="cajaEstadoTexto">Caja Cerrada</div>
+              <div style="font-size: 14px; opacity: 0.9;" id="cajaSaldoInicial"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+          <button id="btnAbrirCaja" class="btn btn-success" style="flex: 1;">
+            🔓 Abrir Caja
+          </button>
+          <button id="btnCerrarCaja" class="btn btn-danger" style="flex: 1;">
+            🔒 Cerrar Caja
+          </button>
+        </div>
+
+        <div class="card" style="background: #f8f9fa;">
+          <h4 style="margin-bottom: 15px;">📊 Resumen del Día</h4>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; text-align: center;">
+            <div>
+              <div style="font-size: 12px; color: #7f8c8d;">Ventas</div>
+              <div style="font-size: 28px; font-weight: bold; color: #27ae60;" id="ventasDelDia">0</div>
+            </div>
+            <div>
+              <div style="font-size: 12px; color: #7f8c8d;">Total</div>
+              <div style="font-size: 28px; font-weight: bold; color: #3498db;" id="totalVendido">$0</div>
+            </div>
+            <div>
+              <div style="font-size: 12px; color: #7f8c8d;">Productos</div>
+              <div style="font-size: 28px; font-weight: bold; color: #f39c12;" id="productosVendidos">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AJUSTES Y SOPORTE -->
+    <div class="section-content" id="section-ajustes">
+      <div class="card">
+        <h3>⚙️ Ajustes y Configuración</h3>
+        
+        <div style="margin-bottom: 30px;">
+          <h4 style="margin-bottom: 15px;">🎨 Preferencias</h4>
+          
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="sonidosActivados" checked>
+              Sonidos al agregar productos
+            </label>
+          </div>
+          
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="autoImpresion">
+              Imprimir ticket automáticamente
+            </label>
+          </div>
+        </div>
+
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ecf0f1;">
+
+        <h4 style="margin-bottom: 15px;">📧 Contactar al Desarrollador</h4>
+        <p style="color: #7f8c8d; margin-bottom: 20px;">
+          ¿Encontraste un bug? ¿Tienes una sugerencia? ¡Escríbeme!
+        </p>
+        
+        <form id="formSoporte">
+          <div class="form-group">
+            <label>Tu Nombre:</label>
+            <input type="text" id="soporteNombre" required placeholder="Nombre completo">
+          </div>
+          
+          <div class="form-group">
+            <label>Tu Email:</label>
+            <input type="email" id="soporteEmail" required placeholder="correo@ejemplo.com">
+          </div>
+          
+          <div class="form-group">
+            <label>Tipo de Solicitud:</label>
+            <select id="soporteTipo" required>
+              <option value="">Selecciona...</option>
+              <option value="bug">🐛 Reportar un Error</option>
+              <option value="sugerencia">💡 Sugerencia de Mejora</option>
+              <option value="ayuda">❓ Necesito Ayuda</option>
+              <option value="otro">📝 Otro</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Mensaje:</label>
+            <textarea id="soporteMensaje" required placeholder="Describe tu consulta o problema en detalle..."></textarea>
+          </div>
+          
+          <button type="submit" class="btn btn-success" style="width: 100%;">
+            📨 Enviar Mensaje
+          </button>
+        </form>
+
+        <div style="margin-top: 30px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+          <p style="font-size: 13px; color: #7f8c8d; text-align: center;">
+            <strong>Desarrollador Kenneth jimenez</strong><br>
+            kennethjimenez744@gmail.com<br>
+            © 2025 - Todos los derechos reservados
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Cliente -->
+  <div id="modalCliente" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>👤 Información del Cliente</h3>
+        <button class="close-modal" onclick="cerrarModal('modalCliente')">&times;</button>
+      </div>
+      
+      <div class="form-group">
+        <label>🆔 Cédula / ID: <span style="color:red;">*</span></label>
+        <div style="display:flex; gap:8px; align-items:flex-end;">
+          <input type="text" id="clienteCedula" placeholder="Ej: 1234567890" style="flex:1;">
+          <button type="button" id="btnBuscarCedulaModal" class="btn btn-primary" 
+                  style="padding:8px 16px; white-space:nowrap;">
+            🔍 Buscar
+          </button>
+        </div>
+        <small style="color:#666; font-size:11px; display:block; margin-top:4px;">
+          Si el cliente ya existe, se cargarán sus datos automáticamente
+        </small>
+      </div>
+
+      <div class="form-group">
+        <label>Nombre del Cliente:</label>
+        <input type="text" id="clienteNombre" placeholder="Nombre completo" value="Mostrador">
+      </div>
+      
+      <div class="form-group">
+        <label>Teléfono (opcional):</label>
+        <input type="text" id="clienteTelefono" placeholder="300 123 4567">
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button class="btn btn-light" onclick="cerrarModal('modalCliente')">Cancelar</button>
+        <button class="btn btn-success" id="btnGuardarCliente" style="flex: 1;">✅ Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Escáner -->
+  <div id="modalEscaner" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>📸 Escanear Código de Barras</h3>
+        <button class="close-modal" onclick="detenerEscaner()">&times;</button>
+      </div>
+      
+      <div id="scanner-container">
+        <div id="scanner-video"></div>
+        <div class="scanner-line"></div>
+      </div>
+      
+      <div style="text-align: center; margin-top: 15px; color: #7f8c8d;">
+        <p>Apunta la cámara hacia el código de barras</p>
+        <p style="font-size: 12px;">Presiona ESC para cancelar</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Método de Pago -->
+  <div id="modalPago" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>💳 Método de Pago</h3>
+        <button class="close-modal" onclick="cerrarModal('modalPago')">&times;</button>
+      </div>
+      
+      <div class="metodos-pago">
+        <button class="metodo-btn active" data-metodo="efectivo">
+          💵 Efectivo
+        </button>
+        <button class="metodo-btn" data-metodo="tarjeta">
+          💳 Tarjeta
+        </button>
+        <button class="metodo-btn" data-metodo="transferencia">
+          🏦 Transferencia
+        </button>
+        <button class="metodo-btn" data-metodo="mixto">
+          💰 Mixto
+        </button>
+      </div>
+
+      <div id="efectivoSection" style="margin-top: 20px;">
+        <div class="form-group">
+          <label>Monto recibido:</label>
+          <input type="number" id="montoRecibido" placeholder="0" min="0" step="0.01" autofocus>
+        </div>
+        <div style="background: #ecf0f1; padding: 15px; border-radius: 8px; margin: 10px 0;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span>Total a pagar:</span>
+            <strong id="totalAPagar">$0</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 20px; font-weight: bold; color: #27ae60;">
+            <span>Cambio:</span>
+            <span id="cambioTexto">$0</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button class="btn btn-light" onclick="cerrarModal('modalPago')">Cancelar</button>
+        <button class="btn btn-success" id="btnFinalizarVenta" style="flex: 1;">✅ Finalizar Venta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Nota -->
+  <div id="modalNota" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>📝 Agregar Nota a la Venta</h3>
+        <button class="close-modal" onclick="cerrarModal('modalNota')">&times;</button>
+      </div>
+      
+      <div class="form-group">
+        <label>Nota u Observación:</label>
+        <textarea id="notaVenta" placeholder="Ej: Cliente pidió factura, entrega a domicilio, etc."></textarea>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button class="btn btn-light" onclick="cerrarModal('modalNota')">Cancelar</button>
+        <button class="btn btn-success" onclick="guardarNota()" style="flex: 1;">✅ Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="./js/firebase.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/negocio.js"></script>
+  <script src="./js/storage.js"></script>
+  <script src="./js/dashboard_cajero.js"></script>
+</body>
+</html>

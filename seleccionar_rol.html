@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seleccionar Rol</title>
+  <link rel="stylesheet" href="./css/estilos.css">
+</head>
+<body>
+  <header class="topbar">
+    <img src="./img/logo.png" class="logo" alt="Logo">
+    <h1>Seleccionar Rol</h1>
+  </header>
+
+  <main class="container narrow">
+    <div class="card">
+      <h2>¿A qué panel deseas acceder?</h2>
+      
+      <div class="grid-2" style="margin-top: 20px;">
+        <button id="btnAdmin" class="btn" style="padding: 2rem;">
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">👨‍💼</div>
+          <div>Administrador</div>
+        </button>
+        
+        <button id="btnCajero" class="btn light" style="padding: 2rem;">
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">🧑‍💻</div>
+          <div>Cajero</div>
+        </button>
+      </div>
+    </div>
+
+    <form id="formRol" class="card hidden">
+      <h3 id="tituloRol">Ingresar como...</h3>
+      
+      <div id="errorMsg" style="display:none;"></div>
+      
+      <label>Usuario</label>
+      <input id="usuario" required>
+      
+      <label>Contraseña</label>
+      <input id="clave" type="password" required>
+      
+      <button class="btn" type="submit" style="margin-top: 1rem;">Entrar</button>
+    </form>
+  </main>
+
+  <script type="module" src="./js/firebase.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/auth.js"></script>
+  
+  <script>
+    // Verificar sesión
+    const sesion = Auth.getSesion();
+    if (!sesion) {
+      window.location.href = './login.html';
+    }
+
+    let rolSeleccionado = null;
+
+    document.getElementById('btnAdmin').addEventListener('click', () => {
+      rolSeleccionado = 'administrador';
+      document.getElementById('tituloRol').textContent = 'Ingresar como Administrador';
+      document.getElementById('formRol').classList.remove('hidden');
+    });
+
+    document.getElementById('btnCajero').addEventListener('click', () => {
+      rolSeleccionado = 'cajero';
+      document.getElementById('tituloRol').textContent = 'Ingresar como Cajero';
+      document.getElementById('formRol').classList.remove('hidden');
+    });
+
+    document.getElementById('formRol').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const usuario = document.getElementById('usuario').value.trim();
+      const clave = document.getElementById('clave').value;
+      
+      try {
+        const { db, doc, getDoc } = window.FB;
+        const negocioRef = doc(db, "negocios", sesion.id);
+        const negocioSnap = await getDoc(negocioRef);
+        
+        if (!negocioSnap.exists()) throw new Error('Negocio no encontrado');
+        
+        const negocio = negocioSnap.data();
+        const usuarios = negocio.usuarios || [];
+        
+        // Buscar usuario
+        const usuarioEncontrado = usuarios.find(u => 
+          u.usuario === usuario && u.rol === rolSeleccionado
+        );
+        
+        if (!usuarioEncontrado) {
+          throw new Error('Usuario no encontrado o rol incorrecto');
+        }
+        
+        // Verificar contraseña
+        const claveHash = await Utils.hashPassword(clave);
+        if (usuarioEncontrado.passwordHash !== claveHash) {
+          throw new Error('Contraseña incorrecta');
+        }
+        
+        // Actualizar sesión con rol
+        sesion.rolActual = rolSeleccionado;
+        sesion.usuarioActual = usuario;
+        localStorage.setItem('sesion_negocio', JSON.stringify(sesion));
+        
+        // Redirigir según rol
+        if (rolSeleccionado === 'administrador') {
+          window.location.href = './dashboard_admin.html';
+        } else {
+          window.location.href = './dashboard_cajero.html';
+        }
+        
+      } catch (err) {
+        Utils.showError(err.message);
+      }
+    });
+  </script>
+</body>
+</html>
